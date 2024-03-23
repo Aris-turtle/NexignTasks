@@ -11,16 +11,18 @@ public class CDR {
         return callLog;
     }
 
+    /**
+     * Метод генерирующий 12 CDR файлов на каждый месяц.
+     * На вход принимает список номеров (абонентов)*/
     public void generateCDRFile(List<String> subscribers) throws IOException {
+        Random random = new Random();
+        int year = (random.nextInt(54)+1970);       //год случайный в промежутке от 1970 до 2024
+        Date period = new Date(2629743 * 1000L);    //Период 1 месяц
+
         for (int j = 0; j < 12; j++) {
             File file = new File("cdr_" + j +".txt");
             file.createNewFile();   //создание файла
-            Random random = new Random();
-
-            Date beginOfPeriod = new Date();
-            beginOfPeriod.setTime(random.nextLong(beginOfPeriod.getTime()));    //случайное начало периода генерации начиная от 1 января 1970 года до текущего момента.
-            Date period = new Date(2629743 * 1000L);    //Период 1 месяц
-
+            Calendar beginOfPeriod = new GregorianCalendar(year, j, 1);;
 
             try (PrintWriter writer = new PrintWriter(file)) {
                 int amount = random.nextInt(100) + 1;   //количество записей в CDR файле (также для быстроты ограничил число значением от 1 до 100)
@@ -28,10 +30,10 @@ public class CDR {
                     String currentSubscriber = subscribers.get(random.nextInt(subscribers.size())); //Выбор случайного абонента
                     writer.println("0" + (random.nextInt(2) + 1) + "," +                    //Запись одной строки в CDR файл
                             "7" + currentSubscriber + "," +
-                            generateStartAndEndOfCall(beginOfPeriod, period, currentSubscriber)
+                            generateStartAndEndOfCall(beginOfPeriod.getTimeInMillis(), period.getTime(), currentSubscriber)
                     );
                 }
-                System.out.println("Количество записей в файле " + amount);
+                System.out.println("Количество записей в файле cdr_" + j + " - " + amount);
             } catch (FileNotFoundException e) {
                 throw new RuntimeException(e);
             }
@@ -40,23 +42,21 @@ public class CDR {
 
     /**
      * Данный метод возвращает случайное время разговора в формате строки "начало звонка, конец звонка".
-     * Где время конца звонка позже начала звонка и абонент, переданному в параметре currentSubscriber,
-     * не может принадлежать время разовора, которое у него была записано ранее. так как абонент не может иметь два телефонных звонка с одного номера одновременно.
-     *
-     * На вход принимается начала период времени для которого генерируется время звонка, начало периода  времени и абонент для которого генерируется время звонка.
-     *
-     * Для реалистичности данных была использована генерация псевдослучаных чисел по нормальному закону с мат ожиданием в 68 секунд и отклонением 10 секунд
+     * <p>На вход принимается начальное время, период генерации и абонент для которого генерируется время звонка.</p>
+     * <p> Метод реализован так, что конец звонка позже начала звонка и абоненту, переданному в параметре currentSubscriber,
+     * не может принадлежать время разовора, которое у него была записано ранее, так как абонент не может иметь два телефонных звонка с одного номера одновременно.
+     * <p>Для реалистичности данных была использована генерация псевдослучаных чисел по нормальному закону с мат ожиданием в 68 секунд и отклонением 10 секунд
      */
-    private String generateStartAndEndOfCall(Date beginOfPeriod, Date period, String currentSubscriber) {
+    private String generateStartAndEndOfCall(long beginOfPeriod, long period, String currentSubscriber) {
         Random random = new Random();
-        Date endOfPeriod = new Date(period.getTime() + beginOfPeriod.getTime());
+        Date endOfPeriod = new Date(period + beginOfPeriod);
         Date callStart;
         Date callEnd;
         boolean isIntersects = true;
 
          do {  //проверка пересечения временных интервалов у одного абонента
             //генерация начала и конца звонка
-            callStart = new Date(random.nextLong(endOfPeriod.getTime() - beginOfPeriod.getTime()) + beginOfPeriod.getTime());
+            callStart = new Date(random.nextLong(endOfPeriod.getTime() - beginOfPeriod) + beginOfPeriod);
             callEnd = new Date(callStart.getTime() + (long) (random.nextGaussian() * 10*1000 + 68*1000));
 
             if (!callLog.containsKey(currentSubscriber)) {      //если абонента нет в словаре, то временной интервал для него генерируется в первый раз и пересечений нет
