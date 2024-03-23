@@ -1,30 +1,41 @@
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
+import org.json.simple.JSONObject;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 public class Test {
     public static void main(String[] args) {
         Random random = new Random();
-//        Date beginOfPeriod = new Date();
-//        System.out.println(beginOfPeriod.getTime());
-//        beginOfPeriod.setTime(random.nextLong(beginOfPeriod.getTime()));
-//        System.out.println(beginOfPeriod.getTime());
+//        UDRGenerator udrFile = new UDRGenerator("78516897504", Map.of("totalTime", "02:12:05"), Map.of("totalTime", "00:34:27"));
 //
-//        Date period = new Date(2629743*1000L);
-//        System.out.println(period);
-//        Date firstDate = new Date(1711146514877L);
-//        //1711146514877
-//        Date month = new Date(2629743000L);
-//        Date anotherMonth = month;
-//        System.out.println(anotherMonth.getTime());
+//        JSONObject jsonObject = new JSONObject();
+//        jsonObject.put("msisdn", udrFile.getMsisdn());
+//        jsonObject.put("incomingCall", udrFile.getIncomingCall());
+//        jsonObject.put("outcomingCall", udrFile.getOutcomingCall());
 //
-//        TimeInterval ti = new TimeInterval(month, firstDate);
-//        System.out.println(ti);
-        int j = 6;
-            Calendar calendar = new GregorianCalendar(1952, j, 1);
-        System.out.println(calendar.getTimeInMillis());
-        Date beginOfPeriod = new Date(calendar.getTimeInMillis());
-        System.out.println(beginOfPeriod.getTime());
+//        try {
+//            File file = new File("reports/test.json");
+//            file.createNewFile();
+//            FileWriter fileWriter = new FileWriter(file);
+//
+//            fileWriter.write(jsonObject.toJSONString());
+//            fileWriter.close();
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+        UDRGenerator udrGenerator = new UDRGenerator();
+        udrGenerator.generateReport();
+        long totalCall = 0;
+
+        Set<Map.Entry<String, Map<String, AdvancedLong>>> entrySet = udrGenerator.getSubscribersSummary().entrySet();
+        for (Map.Entry<String, Map<String, AdvancedLong>> m: udrGenerator.getSubscribersSummary().entrySet()){
+            String msisdn = m.getKey();
+            totalCall = m.getValue().get("01").getValue() + m.getValue().get("02").getValue();      //суммарное время разговоров
+            System.out.println(msisdn + " " + totalCall);
+        }
     }
 }
