@@ -1,0 +1,80 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.*;
+
+public class CDR {
+    private Map<String, List<TimeInterval>> callLog = new HashMap<>();  //журнал звонков
+
+    public Map<String, List<TimeInterval>> getCallLog() {
+        return callLog;
+    }
+
+    public void generateCDRFile(List<String> subscribers) throws IOException {
+        for (int j = 0; j < 12; j++) {
+            File file = new File("cdr_" + j +".txt");
+            file.createNewFile();   //создание файла
+            Random random = new Random();
+
+            Date beginOfPeriod = new Date();
+            beginOfPeriod.setTime(random.nextLong(beginOfPeriod.getTime()));    //случайное начало периода генерации начиная от 1 января 1970 года до текущего момента.
+            Date period = new Date(2629743 * 1000L);    //Период 1 месяц
+
+
+            try (PrintWriter writer = new PrintWriter(file)) {
+                int amount = random.nextInt(100) + 1;   //количество записей в CDR файле (также для быстроты ограничил число значением от 1 до 100)
+                for (int i = 0; i < amount; i++) {
+                    String currentSubscriber = subscribers.get(random.nextInt(subscribers.size())); //Выбор случайного абонента
+                    writer.println("0" + (random.nextInt(2) + 1) + "," +                    //Запись одной строки в CDR файл
+                            "7" + currentSubscriber + "," +
+                            generateStartAndEndOfCall(beginOfPeriod, period, currentSubscriber)
+                    );
+                }
+                System.out.println("Количество записей в файле " + amount);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    /**
+     * Данный метод возвращает случайное время разговора в формате строки "начало звонка, конец звонка".
+     * Где время конца звонка позже начала звонка и абонент, переданному в параметре currentSubscriber,
+     * не может принадлежать время разовора, которое у него была записано ранее. так как абонент не может иметь два телефонных звонка с одного номера одновременно.
+     *
+     * На вход принимается начала период времени для которого генерируется время звонка, начало периода  времени и абонент для которого генерируется время звонка.
+     *
+     * Для реалистичности данных была использована генерация псевдослучаных чисел по нормальному закону с мат ожиданием в 68 секунд и отклонением 10 секунд
+     */
+    private String generateStartAndEndOfCall(Date beginOfPeriod, Date period, String currentSubscriber) {
+        Random random = new Random();
+        Date endOfPeriod = new Date(period.getTime() + beginOfPeriod.getTime());
+        Date callStart;
+        Date callEnd;
+        boolean isIntersects = true;
+
+         do {  //проверка пересечения временных интервалов у одного абонента
+            //генерация начала и конца звонка
+            callStart = new Date(random.nextLong(endOfPeriod.getTime() - beginOfPeriod.getTime()) + beginOfPeriod.getTime());
+            callEnd = new Date(callStart.getTime() + (long) (random.nextGaussian() * 10*1000 + 68*1000));
+
+            if (!callLog.containsKey(currentSubscriber)) {      //если абонента нет в словаре, то временной интервал для него генерируется в первый раз и пересечений нет
+                callLog.put(currentSubscriber, new ArrayList<>(Arrays.asList(new TimeInterval(callStart, callEnd))));
+                return callStart.getTime() + "," + callEnd.getTime();
+
+            } else {    //в противном случае, сгенерированный временной интервал текущего абонента проверяется на пересечение с другими его интервалами
+                for (int i = 0; i < callLog.get(currentSubscriber).size(); i++) {
+                    if ((callLog.get(currentSubscriber).get(i).isIntersects(callStart, callEnd))) {
+                        isIntersects = true;
+                        break;
+                    }
+                    isIntersects = false;
+                }
+            }
+        } while (isIntersects);
+
+        callLog.get(currentSubscriber).add(new TimeInterval(callStart, callEnd));
+        return callStart.getTime() + "," + callEnd.getTime();
+    }
+}
