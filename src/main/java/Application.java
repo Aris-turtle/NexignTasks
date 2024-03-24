@@ -6,7 +6,7 @@ public class Application {
         CDR cdrFile = new CDR();
 
         cdrFile.generateCDRFile(subscribers.getNumbers());
-        System.out.println("CDR файл успешно сгенерирован");
+        System.out.println("CDR файлы успешно сгенерированы");
         System.out.println(cdrFile.getCallLog());
     }
 }
