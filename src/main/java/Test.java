@@ -29,9 +29,9 @@ public class Test {
 //        }
         UDRGenerator udrGenerator = new UDRGenerator();
         udrGenerator.generateReport();
-        long totalCall = 0;
 
-        Set<Map.Entry<String, Map<String, AdvancedLong>>> entrySet = udrGenerator.getSubscribersSummary().entrySet();
+        //вывод суммарных минут на каждого пользователя
+        long totalCall = 0;
         for (Map.Entry<String, Map<String, AdvancedLong>> m: udrGenerator.getSubscribersSummary().entrySet()){
             String msisdn = m.getKey();
             totalCall = m.getValue().get("01").getValue() + m.getValue().get("02").getValue();      //суммарное время разговоров
